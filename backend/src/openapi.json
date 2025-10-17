@@ -1,0 +1,295 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Airbnb Prototype API", "version": "1.0.0" },
+  "servers": [{ "url": "http://localhost:8000/api" }],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sid" }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" } }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "role": { "type": "string", "enum": ["TRAVELER", "OWNER"] },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string", "nullable": true },
+          "about": { "type": "string", "nullable": true },
+          "city": { "type": "string", "nullable": true },
+          "state": { "type": "string", "nullable": true },
+          "country": { "type": "string", "nullable": true },
+          "languages": { "type": "string", "nullable": true },
+          "gender": { "type": "string", "nullable": true },
+          "profile_photo_url": { "type": "string", "nullable": true }
+        }
+      },
+      "Property": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "owner_id": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "type": "string" },
+          "bedrooms": { "type": "integer" },
+          "bathrooms": { "type": "number" },
+          "amenities": { "type": "array", "items": { "type": "string" } },
+          "price_per_night": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string", "nullable": true },
+          "country": { "type": "string" },
+          "guests_max": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "photos": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "traveler_id": { "type": "integer" },
+          "property_id": { "type": "integer" },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" },
+          "guests": { "type": "integer" },
+          "status": { "type": "string", "enum": ["PENDING", "ACCEPTED", "CANCELLED"] },
+          "created_at": { "type": "string", "format": "date-time" },
+          "title": { "type": "string" },
+          "city": { "type": "string" },
+          "country": { "type": "string" },
+          "price_per_night": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": { "summary": "Health check", "responses": { "200": { "description": "OK" } } }
+    },
+    "/auth/signup": {
+      "post": {
+        "summary": "Signup (Traveler/Owner)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["name","email","password"],
+              "properties": {
+                "name": { "type": "string" },
+                "email": { "type": "string" },
+                "password": { "type": "string" },
+                "role": { "type": "string", "enum": ["TRAVELER","OWNER"] }
+              }
+            },
+            "examples": {
+              "traveler": { "value": { "name":"Ava Traveler","email":"ava@example.com","password":"Str0ngPass!","role":"TRAVELER" } }
+            }
+          } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } }
+          },
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login (sets session cookie)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["email","password"],
+              "properties": { "email": { "type": "string" }, "password": { "type": "string" } }
+            },
+            "examples": { "login": { "value": { "email":"ava@example.com","password":"Str0ngPass!" } } }
+          } }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout (clears session)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Current session user",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "summary": "Get profile",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "summary": "Update profile (JSON or multipart with photo)",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/User" } },
+            "multipart/form-data": { "schema": { "type": "object", "properties": { "photo": { "type": "string", "format": "binary" } } } }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/properties": {
+      "get": {
+        "summary": "Search available properties",
+        "parameters": [
+          { "name": "city", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "end", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "guests", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": {
+              "type": "object",
+              "properties": {
+                "items": { "type": "array", "items": { "$ref": "#/components/schemas/Property" } },
+                "page": { "type": "integer" },
+                "pageSize": { "type": "integer" },
+                "total": { "type": "integer" }
+              }
+            } } }
+          }
+        }
+      }
+    },
+    "/properties/{id}": {
+      "get": {
+        "summary": "Get property details",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Property" } } } },
+          "404": { "description": "Not Found" }
+        }
+      }
+    },
+    "/properties/{id}/availability": {
+      "get": {
+        "summary": "Check availability for dates",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "start", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "end", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": {
+              "type": "object",
+              "properties": {
+                "propertyId": { "type": "integer" },
+                "start": { "type": "string", "format": "date" },
+                "end": { "type": "string", "format": "date" },
+                "available": { "type": "boolean" }
+              }
+            } } }
+          },
+          "404": { "description": "Not Found" }
+        }
+      }
+    },
+    "/bookings": {
+      "get": {
+        "summary": "List my bookings",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PENDING", "ACCEPTED", "CANCELLED"] } }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Booking" } } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "summary": "Create booking (PENDING)",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["propertyId", "start", "end", "guests"],
+            "properties": {
+              "propertyId": { "type": "integer" },
+              "start": { "type": "string", "format": "date" },
+              "end": { "type": "string", "format": "date" },
+              "guests": { "type": "integer" }
+            }
+          } } }
+        },
+        "responses": { "201": { "description": "Created" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/favorites": {
+      "get": {
+        "summary": "List my favorites",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Property" } } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/favorites/{propertyId}": {
+      "post": {
+        "summary": "Add favorite",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "name": "propertyId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "204": { "description": "No Content" }, "401": { "description": "Unauthorized" } }
+      },
+      "delete": {
+        "summary": "Remove favorite",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "name": "propertyId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "204": { "description": "No Content" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/trips/history": {
+      "get": {
+        "summary": "Past accepted trips",
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
+      }
+    }
+  }
+}
