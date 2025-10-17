@@ -1,18 +1,6 @@
-# Ignore environment files
+node_modules/
 .env
-
-# Node modules
-backend/node_modules/
-frontend/node_modules/
-
-# Build outputs
-backend/dist/
-frontend/build/
-
-# Python virtual environment and cache
-agent/.venv/
-agent/__pycache__/
-
-# Uploads (user images)
 uploads/
-
+*.log
+.DS_Store
+cookies.txt
