@@ -1,0 +1,164 @@
+/* ======= Gallery (fixed space) ======= */
+.pd-gallery {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 12px;
+}
+
+/* single-column when only 1 photo total */
+.pd-gallery--single {
+  grid-template-columns: 1fr;
+}
+
+.pd-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;        
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f2f2f2;
+}
+.pd-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Right grid must fill hero height and create equal cells */
+.pd-grid {
+  display: grid;
+  gap: 12px;
+  height: 100%;                  
+}
+
+/* Exactly 1 thumb -> single column, one tall cell */
+.pd-grid--c1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;       
+}
+
+/* 2–4 thumbs -> 2 columns × 2 rows (equal tiles) */
+.pd-grid--c2 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;   
+}
+
+/* Each thumbnail fills its grid cell exactly */
+.pd-thumb {
+  position: relative;
+  width: 100%;
+  height: 100%;                  
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+.pd-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;             
+}
+
+/* Show more button over last tile */
+.pd-showmore-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  border-radius: 999px;
+  background: #ffffffd9;
+  border: 1px solid #ddd;
+  font-weight: 600;
+}
+
+/* Lightbox */
+.pd-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 1050;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.pd-lightbox-inner {
+  background: #fff;
+  width: min(1200px, 96vw);
+  max-height: 92vh;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+}
+.pd-lightbox-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border-radius: 999px;
+}
+.pd-lightbox-grid {
+  overflow: auto;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.pd-lightbox-item img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* ======= Reservation Card (with bottom spacing to clear footer) ======= */
+.reserve-card {
+  position: sticky;
+  top: 96px;
+  border-radius: 16px;
+  margin-bottom: 140px;
+}
+
+.price-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  font-weight: 600;
+  background: #fff0f3;
+  border: 1px solid #ffd5de;
+  padding: .5rem .75rem;
+  border-radius: 999px;
+}
+.reserve-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: #6b6b6b;
+  margin-bottom: .15rem;
+}
+.reserve-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  height: 32px;
+}
+.free-cancel {
+  width: 100%;
+  height: 42px;
+  border-radius: 12px;
+  border: 0;
+  background: #f3f4f6;
+  color: #111;
+  font-weight: 600;
+}
+.reserve-btn {
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(90deg,#ff385c,#e61e4d);
+  border: none;
+}
+.reserve-btn:hover { filter: brightness(0.98); }
+
+/* Mobile */
+@media (max-width: 992px) {
+  .pd-gallery { grid-template-columns: 1fr; }
+  .pd-grid--c2 { grid-template-columns: 1fr 1fr; }
+}

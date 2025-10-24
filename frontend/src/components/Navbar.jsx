@@ -1,13 +1,17 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import HostModal from "./HostModal";
 import "./Navbar.css";
+import { travelerApi } from "../services/api";
 
 export default function Navbar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showHost, setShowHost] = useState(false);
+  const [authed, setAuthed] = useState(false);
+  const [user, setUser] = useState(null); // NEW: keep user for initial
   const menuRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     function onDocClick(e) {
@@ -16,6 +20,42 @@ export default function Navbar() {
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
+
+  // UPDATED: capture user details (for avatar initial)
+  async function checkSession() {
+    try {
+      const me = await travelerApi.me();
+      setAuthed(true);
+      setUser(me || null);
+    } catch {
+      setAuthed(false);
+      setUser(null);
+    }
+  }
+
+  useEffect(() => {
+    checkSession();
+  }, [location.pathname]);
+
+  function toggleMenu() {
+    const next = !showMenu;
+    setShowMenu(next);
+    if (next) checkSession();
+  }
+
+  async function handleLogout() {
+    try {
+      await travelerApi.logout();
+    } catch (_) {}
+    setAuthed(false);
+    setUser(null);
+    setShowMenu(false);
+    navigate("/");
+  }
+
+  // derive initial for avatar
+  const initial =
+    ((user?.name || user?.email || "").trim()[0] || "").toUpperCase() || "U";
 
   return (
     <>
@@ -33,33 +73,89 @@ export default function Navbar() {
             <NavItem to="/services" icon="bi-bell-fill" label="Services" />
           </nav>
 
-
           <div className="nav-right">
-            <button className="btn btn-link text-decoration-none text-dark fw-semibold px-3 nav-host"
-              onClick={() => setShowHost(true)}>
+            <button
+              className="btn btn-link text-decoration-none text-dark fw-semibold px-3 nav-host"
+              onClick={() => setShowHost(true)}
+            >
               Become a host
             </button>
 
-            <button className="btn btn-light border circle-btn nav-icon" title="Language">
-              <i className="bi bi-globe"></i>
-            </button>
+            {/* REPLACED: globe -> avatar when authed */}
+            {authed ? (
+              <button
+                className="btn border circle-btn nav-avatar"
+                title="Profile"
+                onClick={() => navigate("/profile")}
+              >
+                <span>{initial}</span>
+              </button>
+            ) : (
+              <button className="btn btn-light border circle-btn nav-icon" title="Language">
+                <i className="bi bi-globe"></i>
+              </button>
+            )}
 
             <div className="position-relative" ref={menuRef}>
               <button
                 className="btn btn-light border rounded-pill d-flex align-items-center gap-2 px-3 nav-menu"
-                onClick={() => setShowMenu(v => !v)}
+                onClick={toggleMenu}
                 aria-expanded={showMenu}
                 aria-haspopup="true"
               >
                 <i className="bi bi-list"></i>
               </button>
 
-              <div className={`dropdown-menu dropdown-menu-end shadow ${showMenu ? "show" : ""}`}
-                   style={{ right: 0, left: "auto" }}>
-                <button className="dropdown-item" onClick={() => setShowHost(true)}>Become a host</button>
-                <button className="dropdown-item" onClick={() => navigate("/login")}>Log in or Sign up</button>
-                <div className="dropdown-divider"></div>
-                <a className="dropdown-item" href="#help">Help Center</a>
+              <div
+                className={`dropdown-menu dropdown-menu-end shadow ${showMenu ? "show" : ""}`}
+                style={{ right: 0, left: "auto" }}
+              >
+                {!authed && (
+                  <>
+                    <button className="dropdown-item" onClick={() => setShowHost(true)}>
+                      Become a host
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setShowMenu(false);
+                        navigate("/login");
+                      }}
+                    >
+                      Log in or Sign up
+                    </button>
+                    <div className="dropdown-divider"></div>
+                    <a className="dropdown-item" href="#help">Help Center</a>
+                  </>
+                )}
+
+                {authed && (
+                  <>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setShowMenu(false);
+                        navigate("/wishlists");
+                      }}
+                    >
+                      Wishlists
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setShowMenu(false);
+                        navigate("/profile");
+                      }}
+                    >
+                      Profile
+                    </button>
+                    <a className="dropdown-item" href="#help">Help Center</a>
+                    <div className="dropdown-divider"></div>
+                    <button className="dropdown-item text-danger" onClick={handleLogout}>
+                      Log out
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

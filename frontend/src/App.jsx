@@ -4,6 +4,8 @@ import TravelerHome from "pages/TravelerHome";
 import Login from "pages/Login";
 import Signup from "pages/Signup";
 import ProtectedRoute from "routes/ProtectedRoute";
+import PropertyDetails from "./pages/PropertyDetails";
+
 
 export default function App() {
   return (
@@ -13,6 +15,7 @@ export default function App() {
           <Route path="/" element={<TravelerHome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/properties/:id" element={<PropertyDetails />} />
 
           <Route
             path="/owner"

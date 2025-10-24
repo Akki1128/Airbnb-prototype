@@ -1,0 +1,23 @@
+.listing-card {
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.listing-thumb-wrap {
+  position: relative;
+  padding-top: 66.66%; 
+  background: #f7f7f7;
+}
+
+.listing-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listing-thumb.placeholder-wave .placeholder {
+  border-radius: 0;
+}
