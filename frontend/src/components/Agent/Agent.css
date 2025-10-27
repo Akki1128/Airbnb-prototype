@@ -8,7 +8,7 @@
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: #0d6efd;              /* bootstrap primary */
+  background: #0d6efd;             
   color: #fff;
   box-shadow: 0 10px 25px rgba(0,0,0,.18);
   display: grid;
@@ -22,7 +22,7 @@
   background: #0b5ed7;
 }
 
-/* ===== Slide-in Panel (right side) ===== */
+/* ===== Slide-in Panel ===== */
 .agent-panel {
   position: fixed;
   top: 0;
