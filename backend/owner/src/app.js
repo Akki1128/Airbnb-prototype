@@ -14,8 +14,8 @@ import userRoutes from './routes/users.js';
 import propertyRoutes from './routes/properties.js';
 import bookingRoutes from './routes/bookings.js';
 import dashboardRoutes from './routes/dashboard.js';
-import ssoRoutes from './routes/sso.js';       // <-- added
-import hostRoutes from './routes/host.js';     // <-- added
+import ssoRoutes from './routes/sso.js';     
+import hostRoutes from './routes/host.js';    
 
 const app = express();
 
@@ -63,7 +63,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/host', hostRoutes);         
 
-// ---- Swagger UI at /api-docs (no auto-open) ----
+// ---- Swagger UI at /api-docs ----
 const openapiPath = path.resolve(__dirname, 'openapi.json');
 if (fs.existsSync(openapiPath)) {
   const swaggerDoc = JSON.parse(fs.readFileSync(openapiPath, 'utf-8'));
