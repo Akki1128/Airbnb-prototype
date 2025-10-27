@@ -16,7 +16,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Safe debug line (doesn't print secrets)
+// Safe debug line 
 console.log('[DB ENVs]', {
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -25,7 +25,7 @@ console.log('[DB ENVs]', {
   passProvided: password ? 'yes' : 'no'
 });
 
-// Optional: quick connection check you can call from app.js
+// Quick connection check you can call from app.js
 export async function checkConnection() {
   try {
     await pool.query('SELECT 1');
