@@ -17,7 +17,7 @@ CORS_ORIGINS = [
     o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",") if o.strip()
 ]
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
-LLM_PROVIDER = os.getenv("AGENT_LLM_PROVIDER", "").strip().lower()  # (unused here, just surfaced in debug)
+LLM_PROVIDER = os.getenv("AGENT_LLM_PROVIDER", "").strip().lower()  
 
 # ---------- FastAPI ----------
 app = FastAPI(title="AI Concierge Agent")
