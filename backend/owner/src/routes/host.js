@@ -3,11 +3,6 @@ import pool from '../db/pool.js';
 
 const router = Router();
 
-/**
- * POST /api/host/enable
- * Requires an Owner-service session (set after /api/auth/exchange).
- * Flips the user role to 'owner' and refreshes the session values.
- */
 router.post('/enable', async (req, res, next) => {
   try {
     const uid = req.session?.userId;
