@@ -4,7 +4,7 @@ import pool from '../db/pool.js';
 
 const router = Router();
 
-/** POST /api/auth/signup  (name, email, password, location) */
+/** POST /api/auth/signup */
 router.post('/signup', async (req, res, next) => {
   try {
     const { name, email, password, location } = req.body || {};
