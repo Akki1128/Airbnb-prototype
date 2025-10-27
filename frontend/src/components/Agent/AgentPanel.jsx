@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "./Agent.css";
 
-/**
- * Props:
- *  - open: boolean
- *  - onClose: fn
- *  - defaults?: { location, startDate, endDate, guests }
- */
 export default function AgentPanel({ open, onClose, defaults = {} }) {
   const AGENT_BASE =
     process.env.REACT_APP_AGENT_BASE ||
