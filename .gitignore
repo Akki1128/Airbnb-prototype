@@ -4,3 +4,4 @@ uploads/
 *.log
 .DS_Store
 cookies.txt
+agent/__pycache__/main.cpython-311.pyc
