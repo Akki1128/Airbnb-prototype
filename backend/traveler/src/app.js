@@ -37,15 +37,39 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ---- CORS ----
+
+// Public frontend origin for EC2 (can be overridden by env)
+const deploymentOrigin =
+  process.env.PUBLIC_FRONTEND_ORIGIN || 'http://54.187.250.215:3000';
+
 const allowed = [
+  // Optional explicit origin via env (you can set this differently on EC2 vs local)
   process.env.CORS_ORIGIN || 'http://localhost:5173',
+
+  // Local React dev servers
   'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+
+  // Backend as origin (rarely used, but keeping your original entry)
   `http://localhost:${process.env.PORT || 8000}`,
+
+  // EC2 frontend
+  deploymentOrigin,
 ];
 
 app.use(
   cors({
-    origin: (origin, cb) => cb(null, !origin || allowed.includes(origin)),
+    origin: (origin, cb) => {
+      // Allow:
+      //   - no Origin header (curl, Postman, JMeter)
+      //   - any origin in our allowlist
+      if (!origin || allowed.includes(origin)) {
+        return cb(null, true);
+      }
+      console.warn('[CORS] Blocked origin:', origin);
+      return cb(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
