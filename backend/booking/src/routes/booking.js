@@ -1,4 +1,3 @@
-// backend/booking/src/routes/bookings.js
 import { Router } from 'express';
 import pool from '../db/pool.js';
 import requireAuth from '../middleware/auth.js';
@@ -22,6 +21,7 @@ const updateSchema = Joi.object({
 
 // Create booking – PRODUCER: BOOKING_CREATED
 router.post('/', requireAuth, async (req, res, next) => {
+  let conn;
   try {
     const payload = await createSchema.validateAsync(req.body, { abortEarly: false });
     const { propertyId, startDate, endDate, guests } = payload;
@@ -30,6 +30,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'endDate must be after startDate' });
     }
 
+    // Check property + capacity
     const [[prop]] = await pool.query(
       'SELECT capacity FROM properties WHERE id = ?',
       [propertyId]
@@ -39,6 +40,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Guests exceed capacity' });
     }
 
+    // Check date overlap
     const [overlap] = await pool.query(
       `SELECT 1 FROM bookings
          WHERE property_id = ?
@@ -51,11 +53,48 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(409).json({ error: 'Property not available for those dates' });
     }
 
-    const [result] = await pool.query(
+    const travelerId = req.session.userId;
+    if (!travelerId) {
+      return res.status(401).json({ error: 'Not authenticated as traveler' });
+    }
+
+    // Name/email from session with safe fallbacks for NOT NULL cols
+    let travelerName =
+      req.session.userName ||
+      req.session.name ||
+      'Traveler';
+    let travelerEmail =
+      req.session.userEmail ||
+      req.session.email ||
+      null;
+
+    if (!travelerEmail) {
+      travelerEmail = `traveler-${travelerId}@placeholder.local`;
+    }
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    // Upsert traveler into users so FK bookings.user_id is valid
+    await conn.query(
+      `
+      INSERT INTO users (id, role, name, email, password_hash)
+      VALUES (?, 'traveler', ?, ?, 'mongo-only-placeholder')
+      ON DUPLICATE KEY UPDATE
+        role = VALUES(role),
+        name = VALUES(name),
+        email = VALUES(email)
+      `,
+      [travelerId, travelerName, travelerEmail]
+    );
+
+    const [result] = await conn.query(
       `INSERT INTO bookings (user_id, property_id, start_date, end_date, guests, status)
        VALUES (?, ?, ?, ?, ?, 'Pending')`,
-      [req.session.userId, propertyId, startDate, endDate, guests]
+      [travelerId, propertyId, startDate, endDate, guests]
     );
+
+    await conn.commit();
 
     const responseBody = { id: result.insertId, status: 'Pending' };
     res.status(201).json(responseBody);
@@ -65,7 +104,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       type: 'BOOKING_CREATED',
       bookingId: result.insertId,
       propertyId,
-      travelerId: req.session.userId,
+      travelerId,
       status: 'Pending',
       startDate,
       endDate,
@@ -77,10 +116,19 @@ router.post('/', requireAuth, async (req, res, next) => {
       console.error('[booking-service] Failed to send booking event:', err);
     });
   } catch (err) {
+    if (conn) {
+      try {
+        await conn.rollback();
+      } catch (rbErr) {
+        console.error('[booking-service] Rollback error:', rbErr.message);
+      }
+    }
     if (err.isJoi) {
       return res.status(400).json({ error: 'Validation failed', details: err.details });
     }
     next(err);
+  } finally {
+    if (conn) conn.release();
   }
 });
 

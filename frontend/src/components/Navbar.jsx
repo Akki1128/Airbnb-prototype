@@ -189,6 +189,8 @@ export default function Navbar() {
                       className="dropdown-item"
                       onClick={() => {
                         setShowMenu(false);
+                        // 🔑 Ensure a pure login does NOT carry any stale host intent
+                        localStorage.removeItem(HOST_INTENT_KEY);
                         navigate("/login");
                       }}
                     >

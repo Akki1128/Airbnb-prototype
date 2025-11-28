@@ -38,7 +38,7 @@ spec:
             - name: KAFKA_LISTENERS
               value: "PLAINTEXT://0.0.0.0:9092"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: PLAINTEXT://kafka.airbnb-lab2.svc.cluster.local:9092
+              value: "PLAINTEXT://kafka.airbnb-lab2.svc.cluster.local:9092"
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
               value: "PLAINTEXT:PLAINTEXT"
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
@@ -73,6 +73,7 @@ spec:
       port: 9092
       targetPort: 9092
   type: ClusterIP
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -113,7 +114,7 @@ spec:
             - name: KAFKA_LISTENERS
               value: "PLAINTEXT://0.0.0.0:9092"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://kafka:9092"
+              value: "PLAINTEXT://kafka.airbnb-lab2.svc.cluster.local:9092"
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
               value: "PLAINTEXT:PLAINTEXT"
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
@@ -132,6 +133,7 @@ spec:
             # --- Log dir (ephemeral is fine for lab) ---
             - name: KAFKA_LOG_DIRS
               value: "/var/lib/kafka/data"
+
 ---
 apiVersion: v1
 kind: Service

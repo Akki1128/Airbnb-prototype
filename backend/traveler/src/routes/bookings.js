@@ -20,6 +20,7 @@ const updateSchema = Joi.object({
 
 // Create booking
 router.post('/', requireAuth, async (req, res, next) => {
+  let conn;
   try {
     const payload = await createSchema.validateAsync(req.body, { abortEarly: false });
     const { propertyId, startDate, endDate, guests } = payload;
@@ -28,6 +29,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'endDate must be after startDate' });
     }
 
+    // Check property + capacity
     const [[prop]] = await pool.query(
       'SELECT capacity FROM properties WHERE id = ?',
       [propertyId]
@@ -37,6 +39,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Guests exceed capacity' });
     }
 
+    // Check date overlap
     const [overlap] = await pool.query(
       `SELECT 1 FROM bookings
         WHERE property_id = ?
@@ -49,17 +52,63 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(409).json({ error: 'Property not available for those dates' });
     }
 
-    const [result] = await pool.query(
+    const travelerId = req.session.userId;
+    if (!travelerId) {
+      return res.status(401).json({ error: 'Not authenticated as traveler' });
+    }
+
+    // Try to get name/email from session, but never allow nulls for NOT NULL cols
+    let travelerName =
+      req.session.userName ||
+      req.session.name ||
+      'Traveler';
+    let travelerEmail =
+      req.session.userEmail ||
+      req.session.email ||
+      null;
+
+    if (!travelerEmail) {
+      travelerEmail = `traveler-${travelerId}@placeholder.local`;
+    }
+
+    // Upsert traveler into users, then insert booking, in a transaction
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    await conn.query(
+      `
+      INSERT INTO users (id, role, name, email, password_hash)
+      VALUES (?, 'traveler', ?, ?, 'mongo-only-placeholder')
+      ON DUPLICATE KEY UPDATE
+        role = VALUES(role),
+        name = VALUES(name),
+        email = VALUES(email)
+      `,
+      [travelerId, travelerName, travelerEmail]
+    );
+
+    const [result] = await conn.query(
       `INSERT INTO bookings (user_id, property_id, start_date, end_date, guests, status)
        VALUES (?, ?, ?, ?, ?, 'Pending')`,
-      [req.session.userId, propertyId, startDate, endDate, guests]
+      [travelerId, propertyId, startDate, endDate, guests]
     );
+
+    await conn.commit();
     res.status(201).json({ id: result.insertId, status: 'Pending' });
   } catch (err) {
+    if (conn) {
+      try {
+        await conn.rollback();
+      } catch (rbErr) {
+        console.error('[traveler-bookings] Rollback error:', rbErr.message);
+      }
+    }
     if (err.isJoi) {
       return res.status(400).json({ error: 'Validation failed', details: err.details });
     }
     next(err);
+  } finally {
+    if (conn) conn.release();
   }
 });
 

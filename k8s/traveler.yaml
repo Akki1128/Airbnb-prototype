@@ -42,3 +42,20 @@ spec:
               value: "kafka.airbnb-lab2.svc.cluster.local:9092"
             - name: BOOKING_STATUS_TOPIC
               value: "booking-status-events"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traveler-service
+  labels:
+    app: traveler
+spec:
+  selector:
+    app: traveler
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP

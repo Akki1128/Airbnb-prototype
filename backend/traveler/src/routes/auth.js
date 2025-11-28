@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 
 import User from '../models/User.js';
 import requireAuth from '../middleware/auth.js';
-import pool from '../db/pool.js';            // 👈 NEW: MySQL pool
+import pool from '../db/pool.js';            // MySQL pool
 
 const router = Router();
 
@@ -53,10 +53,11 @@ router.post('/signup', async (req, res, next) => {
       return res.status(400).json({ error: 'name, email, password required' });
     }
 
-    // Check if traveler already exists in Mongo
-    const existing = await User.findOne({ email, role: 'traveler' });
+    // Check for ANY existing user with this email (any role),
+    // because Mongo has a unique index on email.
+    const existing = await User.findOne({ email });
     if (existing) {
-      console.log('>>> [AUTH] Existing traveler found in Mongo for', email);
+      console.log('>>> [AUTH] Existing user found in Mongo for', email);
       return res.status(409).json({ error: 'Email already in use' });
     }
 
@@ -68,13 +69,13 @@ router.post('/signup', async (req, res, next) => {
       name,
       email,
       passwordHash,
-      role: 'traveler'
+      role: 'traveler',
     });
 
     console.log('>>> [AUTH] Mongo traveler created:', {
       _id: user._id,
       email: user.email,
-      role: user.role
+      role: user.role,
     });
 
     // ✅ Sync profile into MySQL (non-blocking for auth success)
@@ -89,10 +90,16 @@ router.post('/signup', async (req, res, next) => {
       source: 'traveler-mongo-auth',
       name: user.name,
       email: user.email,
-      role: 'traveler'
+      role: 'traveler',
     });
   } catch (err) {
     console.error('>>> [AUTH] SIGNUP error:', err);
+
+    // Gracefully handle duplicate email race-condition against the unique index
+    if (err?.code === 11000 && err?.keyPattern && err.keyPattern.email) {
+      return res.status(409).json({ error: 'Email already in use' });
+    }
+
     next(err);
   }
 });
@@ -110,10 +117,11 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ error: 'email, password required' });
     }
 
-    // Find traveler in Mongo
-    const user = await User.findOne({ email, role: 'traveler' });
+    // Find by email only (works for traveler or owner role).
+    // The role is stored on the document and will be reflected in the session.
+    const user = await User.findOne({ email });
     if (!user) {
-      console.log('>>> [AUTH] No Mongo traveler for email', email);
+      console.log('>>> [AUTH] No Mongo user for email', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -135,7 +143,11 @@ router.post('/login', async (req, res, next) => {
         [uid]
       );
       if (!rows.length) {
-        console.log('>>> [AUTH] No MySQL profile for traveler id =', uid, '—creating now');
+        console.log(
+          '>>> [AUTH] No MySQL profile for traveler id =',
+          uid,
+          '—creating now'
+        );
         await syncTravelerProfileToMySQL(user);
       }
     } catch (err) {
@@ -148,7 +160,7 @@ router.post('/login', async (req, res, next) => {
       source: 'traveler-mongo-auth',
       name: user.name,
       email: user.email,
-      role: req.session.role
+      role: req.session.role,
     });
   } catch (err) {
     console.error('>>> [AUTH] LOGIN error:', err);
@@ -181,7 +193,7 @@ router.post('/session-token', requireAuth, (req, res) => {
   console.log('>>> [AUTH] SESSION-TOKEN for userId =', req.session.userId);
   const payload = {
     id: req.session.userId,
-    role: req.session.role || 'traveler'
+    role: req.session.role || 'traveler',
   };
 
   const token = jwt.sign(
@@ -190,7 +202,7 @@ router.post('/session-token', requireAuth, (req, res) => {
     {
       expiresIn: '120s',
       issuer: 'traveler-api',
-      audience: 'owner-api'
+      audience: 'owner-api',
     }
   );
 
