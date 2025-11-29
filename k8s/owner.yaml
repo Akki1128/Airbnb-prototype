@@ -53,6 +53,16 @@ spec:
             - name: BOOKING_STATUS_TOPIC
               value: "booking-status-events"
 
+          # mount persistent uploads volume
+          volumeMounts:
+            - name: owner-uploads
+              mountPath: /usr/src/app/uploads
+
+      volumes:
+        - name: owner-uploads
+          persistentVolumeClaim:
+            claimName: owner-uploads-pvc   # <-- fixed field name
+
 ---
 apiVersion: v1
 kind: Service
